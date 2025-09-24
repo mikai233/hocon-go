@@ -7,15 +7,15 @@ type Substitution struct {
 	Optional bool
 }
 
-func NewSubstitution(path String, optional bool) Substitution {
-	return Substitution{
+func NewSubstitution(path String, optional bool) *Substitution {
+	return &Substitution{
 		Path:     path,
 		Optional: optional,
 	}
 }
 
 func (s *Substitution) Type() string {
-	return RAW_SUBSTITUTION_TYPE
+	return SubstitutionType
 }
 
 func (s *Substitution) isRawValue() {

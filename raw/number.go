@@ -13,7 +13,7 @@ type PosInt struct {
 func (*PosInt) isNumber() {}
 
 func (p *PosInt) Type() string {
-	return RAW_NUMBER_TYPE
+	return NumberType
 }
 
 func (p *PosInt) String() string {
@@ -30,7 +30,7 @@ type NegInt struct {
 func (*NegInt) isNumber() {}
 
 func (n *NegInt) Type() string {
-	return RAW_NUMBER_TYPE
+	return NumberType
 }
 
 func (n *NegInt) String() string {
@@ -47,7 +47,7 @@ type Float struct {
 func (*Float) isNumber() {}
 
 func (f *Float) Type() string {
-	return RAW_NUMBER_TYPE
+	return NumberType
 }
 
 func (f *Float) String() string {
@@ -57,14 +57,14 @@ func (f *Float) String() string {
 func (f *Float) isRawValue() {
 }
 
-func NewFloat(val float64) Float {
-	return Float{Val: val}
+func NewFloat(val float64) *Float {
+	return &Float{Val: val}
 }
 
-func NewPosInt(val uint64) PosInt {
-	return PosInt{Val: val}
+func NewPosInt(val uint64) *PosInt {
+	return &PosInt{Val: val}
 }
 
-func NewNegInt(val int64) NegInt {
-	return NegInt{Val: val}
+func NewNegInt(val int64) *NegInt {
+	return &NegInt{Val: val}
 }

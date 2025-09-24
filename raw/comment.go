@@ -25,15 +25,15 @@ type Comment struct {
 	Ty      CommentType
 }
 
-func NewComment(content string, ty CommentType) Comment {
-	return Comment{Content: content, Ty: ty}
+func NewComment(content string, ty CommentType) *Comment {
+	return &Comment{Content: content, Ty: ty}
 }
 
-func NewDoubleSlashComment(content string) Comment {
+func NewDoubleSlashComment(content string) *Comment {
 	return NewComment(content, DoubleSlash)
 }
 
-func NewHashComment(content string) Comment {
+func NewHashComment(content string) *Comment {
 	return NewComment(content, Hash)
 }
 
@@ -41,10 +41,10 @@ func (c *Comment) String() string {
 	return c.Ty.String() + c.Content
 }
 
-func CommentFromStr(val string) Comment {
+func CommentFromStr(val string) *Comment {
 	return NewDoubleSlashComment(val)
 }
 
-func CommentFromString(val string) Comment {
+func CommentFromString(val string) *Comment {
 	return NewHashComment(val)
 }

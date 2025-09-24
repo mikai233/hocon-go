@@ -40,28 +40,28 @@ type QuotedString struct{ Value string }
 
 func (*QuotedString) isRawString()       {}
 func (s *QuotedString) String() string   { return s.Value }
-func (*QuotedString) Type() string       { return RAW_QUOTED_STRING_TYPE }
+func (*QuotedString) Type() string       { return QuotedStringType }
 func (s *QuotedString) AsPath() []string { return []string{s.Value} }
 
 type UnquotedString struct{ Value string }
 
 func (*UnquotedString) isRawString()       {}
 func (s *UnquotedString) String() string   { return s.Value }
-func (s *UnquotedString) Type() string     { return RAW_UNQUOTED_STRING_TYPE }
+func (s *UnquotedString) Type() string     { return UnquotedStringType }
 func (s *UnquotedString) AsPath() []string { return []string{s.Value} }
 
 type MultilineString struct{ Value string }
 
 func (*MultilineString) isRawString()       {}
 func (s *MultilineString) String() string   { return s.Value }
-func (s *MultilineString) Type() string     { return RAW_MULTILINE_STRING_TYPE }
+func (s *MultilineString) Type() string     { return MultilineStringType }
 func (s *MultilineString) AsPath() []string { return []string{s.Value} }
 
 type PathExpressionString struct{ Value PathExpression }
 
 func (*PathExpressionString) isRawString()     {}
 func (s *PathExpressionString) String() string { return s.Value.String() }
-func (s *PathExpressionString) Type() string   { return RAW_CONCAT_STRING_TYPE }
+func (s *PathExpressionString) Type() string   { return ConcatStringType }
 func (s *PathExpressionString) AsPath() []string {
 	var result []string
 	for _, p := range s.Value.Paths {
@@ -70,18 +70,18 @@ func (s *PathExpressionString) AsPath() []string {
 	return result
 }
 
-func NewQuotedString(val string) QuotedString {
-	return QuotedString{Value: val}
+func NewQuotedString(val string) *QuotedString {
+	return &QuotedString{Value: val}
 }
 
-func NewUnquotedString(val string) UnquotedString {
-	return UnquotedString{Value: val}
+func NewUnquotedString(val string) *UnquotedString {
+	return &UnquotedString{Value: val}
 }
 
-func NewMultilineString(val string) MultilineString {
-	return MultilineString{Value: val}
+func NewMultilineString(val string) *MultilineString {
+	return &MultilineString{Value: val}
 }
 
-func NewPathExpressionString(paths []String) PathExpressionString {
-	return PathExpressionString{Value: NewPathExpression(paths)}
+func NewPathExpressionString(paths []String) *PathExpressionString {
+	return &PathExpressionString{Value: NewPathExpression(paths)}
 }

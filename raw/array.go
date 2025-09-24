@@ -7,7 +7,7 @@ type Array struct {
 }
 
 func (*Array) Type() string {
-	return RAW_ARRAY_TYPE
+	return ArrayType
 }
 
 func (*Array) isRawValue() {
@@ -21,6 +21,6 @@ func (a *Array) String() string {
 	return "[" + strings.Join(parts, ", ") + "]"
 }
 
-func NewRawArray(values []Value) Array {
-	return Array{Values: values}
+func NewRawArray(values []Value) *Array {
+	return &Array{Values: values}
 }

@@ -11,7 +11,7 @@ type Concat struct {
 }
 
 func (*Concat) Type() string {
-	return RAW_CONCAT_TYPE
+	return ConcatType
 }
 
 func (*Concat) isRawValue() {

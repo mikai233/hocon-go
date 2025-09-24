@@ -4,7 +4,7 @@ type Null struct {
 }
 
 func (Null) Type() string {
-	return RAW_NULL_TYPE
+	return NullType
 }
 
 func (Null) String() string {

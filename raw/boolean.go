@@ -7,7 +7,7 @@ type Boolean struct {
 }
 
 func (*Boolean) Type() string {
-	return RAW_BOOLEAN_TYPE
+	return BooleanType
 }
 
 func (b *Boolean) String() string {

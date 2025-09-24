@@ -5,7 +5,7 @@ type AddAssign struct {
 }
 
 func (AddAssign) Type() string {
-	return RAW_ADD_ASSIGN_TYPE
+	return AddAssignType
 }
 
 func (AddAssign) isRawValue() {
@@ -15,6 +15,6 @@ func (a AddAssign) String() string {
 	return a.Val.String()
 }
 
-func NewAddAssign(v Value) AddAssign {
-	return AddAssign{Val: v}
+func NewAddAssign(v Value) *AddAssign {
+	return &AddAssign{Val: v}
 }

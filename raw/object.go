@@ -7,7 +7,7 @@ type Object struct {
 }
 
 func (o *Object) Type() string {
-	return RAW_OBJECT_TYPE
+	return ObjectType
 }
 
 func (o *Object) isRawValue() {
@@ -25,11 +25,11 @@ func (o *Object) String() string {
 	return result
 }
 
-func NewObject(fields []ObjectField) Object {
-	return Object{Fields: fields}
+func NewObject(fields []ObjectField) *Object {
+	return &Object{Fields: fields}
 }
 
-func ObjectFromEntries(entries []KeyValueField) Object {
+func ObjectFromEntries(entries []KeyValueField) *Object {
 	fields := make([]ObjectField, 0, len(entries))
 	for _, kv := range entries {
 		fields = append(fields, NewKeyValueField(kv.Key, kv.Value))
@@ -128,7 +128,7 @@ func (o *Object) GetByPath(path *common.Path) Value {
 	return nil
 }
 
-func MergeObject(left, right Object) Object {
+func MergeObject(left, right *Object) *Object {
 	left.Fields = append(left.Fields, right.Fields...)
 	return left
 }

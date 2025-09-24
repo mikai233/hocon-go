@@ -48,8 +48,8 @@ func (inc Inclusion) String() string {
 	return result
 }
 
-func NewInclusion(path string, required bool, location *Location, val *Object) Inclusion {
-	return Inclusion{
+func NewInclusion(path string, required bool, location *Location, val *Object) *Inclusion {
+	return &Inclusion{
 		Path:     path,
 		Required: required,
 		Location: location,

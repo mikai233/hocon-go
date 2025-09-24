@@ -1,18 +1,18 @@
 package raw
 
 const (
-	RAW_OBJECT_TYPE           = "object"
-	RAW_ARRAY_TYPE            = "array"
-	RAW_BOOLEAN_TYPE          = "boolean"
-	RAW_NULL_TYPE             = "null"
-	RAW_QUOTED_STRING_TYPE    = "quoted_string"
-	RAW_UNQUOTED_STRING_TYPE  = "unquoted_string"
-	RAW_MULTILINE_STRING_TYPE = "multiline_string"
-	RAW_CONCAT_STRING_TYPE    = "concat_string"
-	RAW_NUMBER_TYPE           = "number"
-	RAW_SUBSTITUTION_TYPE     = "substitution"
-	RAW_CONCAT_TYPE           = "concat"
-	RAW_ADD_ASSIGN_TYPE       = "add_assign"
+	ObjectType          = "object"
+	ArrayType           = "array"
+	BooleanType         = "boolean"
+	NullType            = "null"
+	QuotedStringType    = "quoted_string"
+	UnquotedStringType  = "unquoted_string"
+	MultilineStringType = "multiline_string"
+	ConcatStringType    = "concat_string"
+	NumberType          = "number"
+	SubstitutionType    = "substitution"
+	ConcatType          = "concat"
+	AddAssignType       = "add_assign"
 )
 
 type Value interface {
