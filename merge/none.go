@@ -11,3 +11,5 @@ func (o *None) String() string {
 }
 
 func (o *None) isMergeValue() {}
+
+var NONE = None{}

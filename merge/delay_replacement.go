@@ -4,44 +4,44 @@ package merge
 // When merging HOCON values, a substitution expression (${...}) might be encountered. Since the final value
 // of the substitution is unknown until the entire configuration is parsed, these pending values are stored here.
 type DelayReplacement struct {
-	values []Value
+	Values []Value
 }
 
 // NewDelayReplacement creates a new DelayReplacement from a slice of Values.
 func NewDelayReplacement(values []Value) *DelayReplacement {
-	return &DelayReplacement{values: values}
+	return &DelayReplacement{Values: values}
 }
 
 // FromIter creates a DelayReplacement from any iterable (slice) of Values.
 func FromIter(values []Value) *DelayReplacement {
 	ptrs := make([]Value, len(values))
 	copy(ptrs, values)
-	return &DelayReplacement{values: ptrs}
+	return &DelayReplacement{Values: ptrs}
 }
 
 // IntoInner returns the underlying slice of Values.
 func (d *DelayReplacement) IntoInner() []Value {
-	return d.values
+	return d.Values
 }
 
 // Flatten recursively flattens nested DelayReplacement values into a single DelayReplacement.
 func (d *DelayReplacement) Flatten() *DelayReplacement {
 	var flat []Value
-	for _, v := range d.values {
+	for _, v := range d.Values {
 		switch val := v.(type) {
 		case *DelayReplacement:
-			flat = append(flat, val.Flatten().values...)
+			flat = append(flat, val.Flatten().Values...)
 		default:
 			flat = append(flat, v)
 		}
 	}
-	return &DelayReplacement{values: flat}
+	return &DelayReplacement{Values: flat}
 }
 
 // String implements fmt.Stringer for debugging or display.
 func (d *DelayReplacement) String() string {
 	s := "DelayReplacement("
-	for i, v := range d.values {
+	for i, v := range d.Values {
 		if i > 0 {
 			s += ", "
 		}
@@ -56,3 +56,7 @@ func (d *DelayReplacement) Type() string {
 }
 
 func (d *DelayReplacement) isMergeValue() {}
+
+func (d *DelayReplacement) PushFront(val Value) {
+	d.Values = append([]Value{val}, d.Values...)
+}

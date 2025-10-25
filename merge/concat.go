@@ -3,6 +3,7 @@ package merge
 import (
 	"fmt"
 	"hocon-go/common"
+	"hocon-go/raw"
 )
 
 // Concat represents a concatenation of evaluated HOCON values during the merge phase.
@@ -146,9 +147,8 @@ func (c *Concat) String() string {
 	return s
 }
 
-// ---- Placeholder types and functions for compilation ----
-
-func Concatenate(path *common.Path, left Value, space *string, right Value) (Value, error) {
-	// implement concatenation logic according to HOCON semantics
-	panic("unimplement")
+func (c *Concat) Type() string {
+	return raw.ConcatType
 }
+
+func (o *Concat) isMergeValue() {}

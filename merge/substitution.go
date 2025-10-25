@@ -6,11 +6,11 @@ import (
 )
 
 type Substitution struct {
-	Path     common.Path
+	Path     *common.Path
 	Optional bool
 }
 
-func NewSubstitution(path common.Path, optional bool) *Substitution {
+func NewSubstitution(path *common.Path, optional bool) *Substitution {
 	return &Substitution{
 		Path:     path,
 		Optional: optional,

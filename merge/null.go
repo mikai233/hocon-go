@@ -1,16 +1,15 @@
-package raw
+package merge
 
-type Null struct {
-}
+type Null struct{}
 
 func (*Null) Type() string {
-	return NullType
+	return "null"
 }
 
 func (*Null) String() string {
 	return "null"
 }
 
-func (*Null) isRawValue() {}
+func (*Null) isMergeValue() {}
 
 var NULL = Null{}
