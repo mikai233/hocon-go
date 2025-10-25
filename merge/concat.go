@@ -23,7 +23,7 @@ func NewConcat(values []Value, spaces []*string) (*Concat, error) {
 }
 
 // Two creates a minimal Concat with two values and one optional space.
-func Two(left Value, space *string, right Value) *Concat {
+func NewConcatTwo(left Value, space *string, right Value) *Concat {
 	return &Concat{
 		values: []Value{left, right},
 		spaces: []*string{space},

@@ -3,6 +3,7 @@ package merge
 import (
 	"fmt"
 	"hocon-go/common"
+	"log"
 )
 
 type Value interface {
@@ -154,8 +155,100 @@ func ResolveAddAssign(k string, values map[string]Value) {
 }
 
 func Concatenate(path *common.Path, left Value, space *string, right Value) (Value, error) {
-	// implement concatenation logic according to HOCON semantics
-	panic("unimplement")
+	log.Printf("concatenate: %v <- %v", left, right)
+
+	var val Value
+
+	switch l := left.(type) {
+	// --- Object concatenation ---
+	case *Object:
+		switch r := right.(type) {
+		case *None:
+			val = l
+		case *Object:
+			if err := l.Merge(r, path); err != nil {
+				return nil, err
+			}
+			val = l
+		case *Null, *Array, *Boolean, *String, *Number, *AddAssign:
+			return nil, &common.ConcatenateDifferentType{Path: path.String(), LeftType: left.Type(), RightType: right.Type()}
+		case *Substitution, *DelayReplacement:
+			val = NewConcatTwo(left, space, right)
+		case *Concat:
+			r.PushFront(left, space)
+			val = r
+		default:
+			return nil, fmt.Errorf("unsupported right type: %T", right)
+		}
+
+	// --- Array concatenation ---
+	case *Array:
+		if r, ok := right.(*Array); ok {
+			l.Values = append(l.Values, r.Values...)
+			val = l
+		} else {
+			return nil, &common.ConcatenateDifferentType{Path: path.String(), LeftType: left.Type(), RightType: right.Type()}
+		}
+
+	// --- None ---
+	case *None:
+		if space != nil {
+			switch r := right.(type) {
+			case *Null, *Boolean, *String, *Number:
+				s := *space + r.String()
+				val = NewString(s)
+			case *None:
+				val = NewString(*space)
+			case *Substitution:
+				val = NewConcatTwo(left, space, right)
+			default:
+				val = right
+			}
+		} else {
+			val = right
+		}
+
+	// --- Primitive (Null, Bool, String, Number) ---
+	case *Null, *Boolean, *String, *Number:
+		switch r := right.(type) {
+		case *Boolean, *Null, *String, *Number:
+			s := l.String()
+			if space != nil {
+				s += *space
+			}
+			s += r.String()
+			val = NewString(s)
+		case *None:
+			s := l.String()
+			if space != nil {
+				s += *space
+			}
+			val = NewString(s)
+		case *Substitution:
+			val = NewConcatTwo(left, space, right)
+		default:
+			return nil, &common.ConcatenateDifferentType{Path: path.String(), LeftType: left.Type(), RightType: right.Type()}
+		}
+
+	// --- Substitution or DelayReplacement ---
+	case *Substitution, *DelayReplacement:
+		val = NewConcatTwo(left, space, right)
+
+	// --- Concat ---
+	case *Concat:
+		l.PushBack(space, right)
+		val = l
+
+	// --- AddAssign (invalid) ---
+	case *AddAssign:
+		return nil, &common.ConcatenateDifferentType{Path: path.String(), LeftType: left.Type(), RightType: right.Type()}
+
+	default:
+		return nil, fmt.Errorf("unknown left type: %T", left)
+	}
+
+	log.Printf("concatenate result: %v = %v", path, val)
+	return val, nil
 }
 
 func IsMerged(value Value) bool {
