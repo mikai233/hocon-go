@@ -1,6 +1,10 @@
 package raw
 
-import "strconv"
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
 
 type Number interface {
 	isNumber()
@@ -67,4 +71,40 @@ func NewPosInt(val uint64) *PosInt {
 
 func NewNegInt(val int64) *NegInt {
 	return &NegInt{Val: val}
+}
+
+// ParseNumber turns a textual HOCON number into one of the Number implementations.
+func ParseNumber(text string) (Number, error) {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return nil, errors.New("number literal is empty")
+	}
+
+	// Float literals (anything with a decimal point or exponent).
+	if strings.ContainsAny(trimmed, ".eE") {
+		f, err := strconv.ParseFloat(trimmed, 64)
+		if err != nil {
+			return nil, err
+		}
+		return &Float{Val: f}, nil
+	}
+
+	// Negative integers.
+	if trimmed[0] == '-' {
+		i, err := strconv.ParseInt(trimmed, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		return &NegInt{Val: i}, nil
+	}
+
+	// Positive integers (also accepts a leading '+', strip it first).
+	if trimmed[0] == '+' {
+		trimmed = trimmed[1:]
+	}
+	u, err := strconv.ParseUint(trimmed, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &PosInt{Val: u}, nil
 }
