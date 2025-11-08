@@ -21,3 +21,13 @@ func DefaultConfigOptions() ConfigOptions {
 		MaxIncludeDepth:      defaultMaxIncludeDepth,
 	}
 }
+
+func normalizeOptions(opts ConfigOptions) ConfigOptions {
+	if opts.MaxDepth == 0 {
+		opts.MaxDepth = defaultMaxDepth
+	}
+	if opts.MaxIncludeDepth == 0 {
+		opts.MaxIncludeDepth = defaultMaxIncludeDepth
+	}
+	return opts
+}

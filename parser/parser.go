@@ -14,13 +14,22 @@ type Parser struct {
 	scratch []byte
 	options ConfigOptions
 	depth   int
+	baseDir string
+	ctx     includeContext
 }
 
 func NewParser(data []byte) *Parser {
+	return newParser(data, DefaultConfigOptions(), "", includeContext{})
+}
+
+func newParser(data []byte, opts ConfigOptions, baseDir string, ctx includeContext) *Parser {
+	opts = normalizeOptions(opts)
 	return &Parser{
 		reader:  newReader(data),
 		scratch: make([]byte, 0, 64),
-		options: DefaultConfigOptions(),
+		options: opts,
+		baseDir: baseDir,
+		ctx:     ctx,
 	}
 }
 
@@ -184,6 +193,9 @@ func (p *Parser) parseObjectField() (raw.ObjectField, error) {
 		if bytes, err := p.reader.peekN(7); err == nil && string(bytes) == "include" {
 			inclusion, err := p.parseInclude()
 			if err != nil {
+				return nil, err
+			}
+			if err := p.parseInclusion(inclusion); err != nil {
 				return nil, err
 			}
 			return raw.NewInclusionField(*inclusion), nil
