@@ -3,6 +3,7 @@ package merge
 import (
 	"fmt"
 	"hocon-go/common"
+	"hocon-go/raw"
 	"log"
 )
 
@@ -13,11 +14,7 @@ type Value interface {
 }
 
 func Replace(path *common.Path, left Value, right Value) (Value, error) {
-	// trace
-	// fmt.Printf("replace: `%s`: `%s` <- `%s`\n", *path, left.String(), right.String())
-
 	switch l := left.(type) {
-
 	// LEFT = OBJECT
 	case *Object:
 		switch r := right.(type) {
@@ -29,7 +26,6 @@ func Replace(path *common.Path, left Value, right Value) (Value, error) {
 		case *Array, *Boolean, *Null, *None, *String, *Number:
 			return right, nil
 		case *Substitution:
-			// wrap as DelayReplacement([left, right])
 			return NewDelayReplacement([]Value{left, right}), nil
 		case *Concat:
 			resolved, err := r.TryResolve(path)
@@ -71,9 +67,9 @@ func Replace(path *common.Path, left Value, right Value) (Value, error) {
 			case *Array:
 				return Concatenate(path, l, nil, rr)
 			case *Concat:
-				return NewDelayReplacement([]Value{left, right}), nil
+				return NewDelayReplacement([]Value{left, rr}), nil
 			default:
-				return right, nil
+				return rr, nil
 			}
 		case *AddAssign:
 			inner := r.Val
@@ -270,4 +266,85 @@ func IsMerged(value Value) bool {
 		return false
 	}
 	return false
+}
+
+func CloneValue(value Value) Value {
+	if value == nil {
+		return nil
+	}
+	switch v := value.(type) {
+	case *Object:
+		copied := make(map[string]Value, len(v.Values))
+		for k, child := range v.Values {
+			copied[k] = CloneValue(child)
+		}
+		return &Object{
+			Values:   copied,
+			IsMerged: v.IsMerged,
+		}
+	case *Array:
+		values := make([]Value, len(v.Values))
+		for i, child := range v.Values {
+			values[i] = CloneValue(child)
+		}
+		return &Array{
+			Values:   values,
+			IsMerged: v.IsMerged,
+		}
+	case *Boolean:
+		return &Boolean{Val: v.Val}
+	case *String:
+		return &String{Val: v.Val}
+	case *Number:
+		return &Number{N: cloneNumber(v.N)}
+	case *Null:
+		return &Null{}
+	case *None:
+		return &None{}
+	case *Substitution:
+		return &Substitution{
+			Path:     clonePath(v.Path),
+			Optional: v.Optional,
+		}
+	case *Concat:
+		values := make([]Value, len(v.values))
+		for i, child := range v.values {
+			values[i] = CloneValue(child)
+		}
+		spaces := make([]*string, len(v.spaces))
+		for i, space := range v.spaces {
+			if space != nil {
+				s := *space
+				spaces[i] = &s
+			}
+		}
+		newConcat, err := NewConcat(values, spaces)
+		if err != nil {
+			panic(err)
+		}
+		return newConcat
+	case *AddAssign:
+		return &AddAssign{Val: CloneValue(v.Val)}
+	case *DelayReplacement:
+		values := make([]Value, len(v.Values))
+		for i, child := range v.Values {
+			values[i] = CloneValue(child)
+		}
+		return NewDelayReplacement(values)
+	default:
+		return value
+	}
+}
+
+func cloneNumber(number raw.Number) raw.Number {
+	switch n := number.(type) {
+	case *raw.PosInt:
+		return &raw.PosInt{Val: n.Val}
+	case *raw.NegInt:
+		return &raw.NegInt{Val: n.Val}
+	case *raw.Float:
+		return &raw.Float{Val: n.Val}
+	default:
+		return number
+	}
 }

@@ -33,3 +33,10 @@ func (s *Substitution) String() string {
 	result += "}"
 	return result
 }
+
+func (s *Substitution) FullPath() string {
+	if s.Path == nil {
+		return ""
+	}
+	return s.Path.String()
+}

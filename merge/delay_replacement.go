@@ -8,15 +8,16 @@ type DelayReplacement struct {
 }
 
 // NewDelayReplacement creates a new DelayReplacement from a slice of Values.
+// Nested DelayReplacement entries are flattened to mirror the Rust semantics.
 func NewDelayReplacement(values []Value) *DelayReplacement {
-	return &DelayReplacement{Values: values}
+	return &DelayReplacement{Values: flattenDelayReplacementValues(values)}
 }
 
 // FromIter creates a DelayReplacement from any iterable (slice) of Values.
 func FromIter(values []Value) *DelayReplacement {
 	ptrs := make([]Value, len(values))
 	copy(ptrs, values)
-	return &DelayReplacement{Values: ptrs}
+	return NewDelayReplacement(ptrs)
 }
 
 // IntoInner returns the underlying slice of Values.
@@ -59,4 +60,19 @@ func (d *DelayReplacement) isMergeValue() {}
 
 func (d *DelayReplacement) PushFront(val Value) {
 	d.Values = append([]Value{val}, d.Values...)
+}
+
+func flattenDelayReplacementValues(values []Value) []Value {
+	if len(values) == 0 {
+		return nil
+	}
+	flat := make([]Value, 0, len(values))
+	for _, v := range values {
+		if dr, ok := v.(*DelayReplacement); ok {
+			flat = append(flat, dr.Flatten().Values...)
+		} else {
+			flat = append(flat, v)
+		}
+	}
+	return flat
 }
