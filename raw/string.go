@@ -39,6 +39,7 @@ type String interface {
 type QuotedString struct{ Value string }
 
 func (*QuotedString) isRawString()       {}
+func (*QuotedString) isRawValue()        {}
 func (s *QuotedString) String() string   { return s.Value }
 func (*QuotedString) Type() string       { return QuotedStringType }
 func (s *QuotedString) AsPath() []string { return []string{s.Value} }
@@ -46,6 +47,7 @@ func (s *QuotedString) AsPath() []string { return []string{s.Value} }
 type UnquotedString struct{ Value string }
 
 func (*UnquotedString) isRawString()       {}
+func (*UnquotedString) isRawValue()        {}
 func (s *UnquotedString) String() string   { return s.Value }
 func (s *UnquotedString) Type() string     { return UnquotedStringType }
 func (s *UnquotedString) AsPath() []string { return []string{s.Value} }
@@ -53,6 +55,7 @@ func (s *UnquotedString) AsPath() []string { return []string{s.Value} }
 type MultilineString struct{ Value string }
 
 func (*MultilineString) isRawString()       {}
+func (*MultilineString) isRawValue()        {}
 func (s *MultilineString) String() string   { return s.Value }
 func (s *MultilineString) Type() string     { return MultilineStringType }
 func (s *MultilineString) AsPath() []string { return []string{s.Value} }
@@ -60,6 +63,7 @@ func (s *MultilineString) AsPath() []string { return []string{s.Value} }
 type PathExpressionString struct{ Value PathExpression }
 
 func (*PathExpressionString) isRawString()     {}
+func (*PathExpressionString) isRawValue()      {}
 func (s *PathExpressionString) String() string { return s.Value.String() }
 func (s *PathExpressionString) Type() string   { return ConcatStringType }
 func (s *PathExpressionString) AsPath() []string {
