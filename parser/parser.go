@@ -145,17 +145,24 @@ func (p *Parser) dropComment() (bool, error) {
 		return false, err
 	}
 	if ch == '#' {
-		if err := p.reader.discard(1); err != nil {
+		if _, _, err := p.parseComment(); err != nil {
 			return false, err
 		}
-		return true, p.discardUntilNewline()
+		return true, nil
 	}
 	if ch == '/' {
-		if _, ch2, err := p.reader.peek2(); err == nil && ch2 == '/' {
-			if err := p.reader.discard(2); err != nil {
+		_, ch2, err := p.reader.peek2()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return false, nil
+			}
+			return false, err
+		}
+		if ch2 == '/' {
+			if _, _, err := p.parseComment(); err != nil {
 				return false, err
 			}
-			return true, p.discardUntilNewline()
+			return true, nil
 		}
 	}
 	return false, nil
@@ -181,6 +188,64 @@ func (p *Parser) discardUntilNewline() error {
 			return nil
 		}
 	}
+}
+
+func (p *Parser) parseComment() (raw.CommentType, string, error) {
+	ty, err := p.parseCommentToken()
+	if err != nil {
+		return 0, "", err
+	}
+	p.scratch = p.scratch[:0]
+	for {
+		ch, err := p.reader.peek()
+		if err != nil {
+			if errors.Is(err, errEOF) {
+				return ty, string(p.scratch), nil
+			}
+			return 0, "", err
+		}
+		if ch == '\n' {
+			return ty, string(p.scratch), nil
+		}
+		if ch == '\r' {
+			if _, next, err := p.reader.peek2(); err == nil && next == '\n' {
+				return ty, string(p.scratch), nil
+			}
+		}
+		if _, err := p.reader.next(); err != nil {
+			if errors.Is(err, errEOF) {
+				return ty, string(p.scratch), nil
+			}
+			return 0, "", err
+		}
+		p.scratch = append(p.scratch, ch)
+	}
+}
+
+func (p *Parser) parseCommentToken() (raw.CommentType, error) {
+	ch, err := p.reader.peek()
+	if err != nil {
+		return 0, err
+	}
+	if ch == '#' {
+		if err := p.reader.discard(1); err != nil {
+			return 0, err
+		}
+		return raw.Hash, nil
+	}
+	if ch == '/' {
+		_, ch2, err := p.reader.peek2()
+		if err != nil {
+			return 0, err
+		}
+		if ch2 == '/' {
+			if err := p.reader.discard(2); err != nil {
+				return 0, err
+			}
+			return raw.DoubleSlash, nil
+		}
+	}
+	return 0, &unexpectedTokenError{Expected: "# or //", Found: ch}
 }
 
 func (p *Parser) parseObjectField() (raw.ObjectField, error) {
@@ -538,6 +603,8 @@ func (p *Parser) dropKVSeparator() (bool, error) {
 			return true, nil
 		}
 		return false, &unexpectedTokenError{Expected: "=", Found: ch}
+	case '{':
+		return false, nil
 	default:
 		return false, &unexpectedTokenError{Expected: ": or =", Found: ch}
 	}
@@ -650,9 +717,10 @@ func (p *Parser) expectChar(ch byte) error {
 }
 
 func (p *Parser) parsePathExpression() (raw.String, error) {
-	segments := make([]raw.String, 0)
+	segments := make([]string, 0)
 	for {
-		if err := p.dropHorizontalWhitespace(); err != nil {
+		prefix, err := p.captureHorizontalWhitespace()
+		if err != nil {
 			return nil, err
 		}
 		ch, err := p.reader.peek()
@@ -662,37 +730,34 @@ func (p *Parser) parsePathExpression() (raw.String, error) {
 			}
 			break
 		}
-		var segStr string
+		var segment string
 		switch ch {
 		case '"':
-			str, err := p.parsePossibleMultilineText()
-			if err != nil {
-				return nil, err
-			}
-			segStr = str
+			segment, err = p.parsePossibleMultilineText()
 		default:
-			str, err := p.parseUnquotedPathSegment()
-			if err != nil {
-				return nil, err
-			}
-			segStr = str
+			segment, err = p.parseUnquotedPathSegment()
 		}
-		segments = append(segments, raw.NewQuotedString(segStr))
-		if err := p.dropHorizontalWhitespace(); err != nil {
+		if err != nil {
+			return nil, err
+		}
+		segment = prefix + segment
+		suffix, err := p.captureHorizontalWhitespace()
+		if err != nil {
 			return nil, err
 		}
 		ch, err = p.reader.peek()
 		if err != nil {
+			segments = append(segments, segment)
 			break
 		}
 		if ch == '.' {
+			segment += suffix
+			segments = append(segments, segment)
 			_ = p.reader.discard(1)
 			continue
 		}
-		if strings.ContainsRune(":=+{", rune(ch)) || ch == '}' {
-			break
-		}
-		if isWhitespace(rune(ch)) {
+		if strings.ContainsRune(":=+{", rune(ch)) || ch == '}' || isWhitespace(rune(ch)) {
+			segments = append(segments, segment)
 			break
 		}
 	}
@@ -700,9 +765,21 @@ func (p *Parser) parsePathExpression() (raw.String, error) {
 		return nil, &unexpectedTokenError{Expected: "path", Found: 0}
 	}
 	if len(segments) == 1 {
-		return segments[0], nil
+		return raw.NewQuotedString(segments[0]), nil
 	}
-	return raw.NewPathExpressionString(segments), nil
+	rawSegments := make([]raw.String, len(segments))
+	for i, s := range segments {
+		rawSegments[i] = raw.NewQuotedString(s)
+	}
+	return raw.NewPathExpressionString(rawSegments), nil
+}
+
+func (p *Parser) captureHorizontalWhitespace() (string, error) {
+	buf := make([]byte, 0)
+	if err := p.parseHorizontalWhitespace(&buf); err != nil {
+		return "", err
+	}
+	return string(buf), nil
 }
 
 func (p *Parser) parsePossibleMultilineString() (raw.Value, error) {
@@ -906,11 +983,36 @@ func (p *Parser) parseUnquotedString() (raw.Value, error) {
 }
 
 func (p *Parser) parseUnquotedPathSegment() (string, error) {
-	val, err := p.parseUnquotedString()
-	if err != nil {
-		return "", err
+	var b strings.Builder
+	for {
+		ch, err := p.reader.peek()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return "", err
+		}
+		if ch == '.' {
+			break
+		}
+		if ch == '/' {
+			if _, ch2, err := p.reader.peek2(); err == nil && ch2 == '/' {
+				break
+			}
+		}
+		if p.startsWithHorizontalWhitespace() {
+			break
+		}
+		if ForbiddenTable[ch] || ch == ',' || ch == ':' || ch == '=' || ch == '+' || ch == '{' || ch == '}' || ch == '[' || ch == ']' || ch == '#' {
+			break
+		}
+		b.WriteByte(ch)
+		_ = p.reader.discard(1)
 	}
-	return val.(*raw.UnquotedString).Value, nil
+	if b.Len() == 0 {
+		return "", fmt.Errorf("invalid path segment")
+	}
+	return b.String(), nil
 }
 
 func (p *Parser) parseSubstitution() (raw.Value, error) {
@@ -924,6 +1026,9 @@ func (p *Parser) parseSubstitution() (raw.Value, error) {
 	if ch, err := p.reader.peek(); err == nil && ch == '?' {
 		optional = true
 		_ = p.reader.discard(1)
+		if err := p.dropHorizontalWhitespace(); err != nil {
+			return nil, err
+		}
 	}
 	path, err := p.parsePathExpression()
 	if err != nil {

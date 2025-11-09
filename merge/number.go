@@ -10,7 +10,13 @@ func (*Number) Type() string {
 	return raw.NumberType
 }
 
-func (*Number) String() string {
+func (n *Number) String() string {
+	if n == nil || n.N == nil {
+		return "0"
+	}
+	if s, ok := n.N.(interface{ String() string }); ok {
+		return s.String()
+	}
 	return "number"
 }
 

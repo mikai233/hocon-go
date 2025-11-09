@@ -2,6 +2,7 @@ package raw
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -79,6 +80,9 @@ func ParseNumber(text string) (Number, error) {
 	if trimmed == "" {
 		return nil, errors.New("number literal is empty")
 	}
+	if !isJSONNumber(trimmed) {
+		return nil, fmt.Errorf("invalid number literal: %s", trimmed)
+	}
 
 	// Float literals (anything with a decimal point or exponent).
 	if strings.ContainsAny(trimmed, ".eE") {
@@ -107,4 +111,52 @@ func ParseNumber(text string) (Number, error) {
 		return nil, err
 	}
 	return &PosInt{Val: u}, nil
+}
+
+func isJSONNumber(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	i := 0
+	if s[i] == '-' || s[i] == '+' {
+		i++
+	}
+	if i >= len(s) {
+		return false
+	}
+	if s[i] == '0' {
+		i++
+	} else if isDigit(s[i]) {
+		for i < len(s) && isDigit(s[i]) {
+			i++
+		}
+	} else {
+		return false
+	}
+	if i < len(s) && s[i] == '.' {
+		i++
+		if i >= len(s) || !isDigit(s[i]) {
+			return false
+		}
+		for i < len(s) && isDigit(s[i]) {
+			i++
+		}
+	}
+	if i < len(s) && (s[i] == 'e' || s[i] == 'E') {
+		i++
+		if i < len(s) && (s[i] == '+' || s[i] == '-') {
+			i++
+		}
+		if i >= len(s) || !isDigit(s[i]) {
+			return false
+		}
+		for i < len(s) && isDigit(s[i]) {
+			i++
+		}
+	}
+	return i == len(s)
+}
+
+func isDigit(b byte) bool {
+	return b >= '0' && b <= '9'
 }
